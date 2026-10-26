@@ -577,4 +577,13 @@
         <class name="io.inji.testrig.apirig.injiverify.testscripts.GetWithParamAndHeader"/>
     </classes>
 </test>
+	<!-- OpenID Foundation conformance: one TestNG result per conformance module, plus the
+	     benchmark gate. Skipped unless conformanceResultFile or conformanceRunnerDir is set
+	     in config/injiVerify.properties (or as a JVM system property). -->
+	<test name="OpenIDConformance">
+		<classes>
+			<class
+				name="io.inji.testrig.apirig.injiverify.testscripts.OpenIDConformanceTest" />
+		</classes>
+	</test>
 </suite>
