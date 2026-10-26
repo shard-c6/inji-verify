@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.inji.testrig.apirig.injiverify.utils.InjiVerifyConfigManager;
+import io.inji.testrig.apirig.injiverify.utils.InjiVerifyConstants;
 import io.inji.testrig.apirig.injiverify.utils.InjiVerifyUtil;
 import io.mosip.testrig.apirig.utils.AdminTestException;
 
@@ -61,6 +62,7 @@ public class OpenIDConformanceTest extends InjiVerifyUtil implements ITest {
 	static final String COMPONENT_KEY = "conformanceComponent";
 	static final String TIMEOUT_KEY = "conformanceRunnerTimeoutMinutes";
 	static final String VERIFY_API_PATH = "/v1/verify";
+	static final String BASE_URL_KEY = InjiVerifyConstants.INJI_VERIFY_BASE_URL;
 
 	protected String testCaseName = "";
 
@@ -154,9 +156,16 @@ public class OpenIDConformanceTest extends InjiVerifyUtil implements ITest {
 			throw new ConformanceSetupException("Conformance runner not found at " + script.getAbsolutePath(), false);
 		}
 		try {
+			// The testrig's own base URL; empty when its configuration was never loaded (TestNG
+			// started without MosipTestRunner), and the runner must not get a relative URL then.
+			String base = setting(BASE_URL_KEY, injiVerifyBaseUrl == null ? "" : injiVerifyBaseUrl.trim());
+			if (!base.matches("(?i)https?://.+")) {
+				throw new ConformanceSetupException("No absolute " + BASE_URL_KEY + " to run conformance against (got '"
+						+ base + "'); set it in the testrig configuration or as a JVM system property", false);
+			}
 			File output = File.createTempFile("conformance-result-", ".json");
 			output.deleteOnExit();
-			String endpoint = injiVerifyBaseUrl.trim().replaceAll("/+$", "") + VERIFY_API_PATH;
+			String endpoint = base.replaceAll("/+$", "") + VERIFY_API_PATH;
 			ProcessBuilder pb = new ProcessBuilder(script.getAbsolutePath(), "--component", "verify", "--endpoint",
 					endpoint, "--no-gate-exit", "--output", output.getAbsolutePath());
 			pb.directory(runnerDir);
