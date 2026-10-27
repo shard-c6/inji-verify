@@ -12,7 +12,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.imageio.IIOImage;
@@ -39,7 +38,7 @@ public class BasePage {
     private static final String QR_RESOURCE_DIR = "src" + File.separator + "test" + File.separator + "resources"
             + File.separator + "QRCodes";
     private static final String RUNTIME_MEDIA_DIR = "test-output" + File.separator + "runtime-media";
-    private static final String BOUNDARY_MIN_QR_NAME = "QRCode_10KB.jpg";
+    private static final String BOUNDARY_MIN_QR_NAME = "QRCode_10KB.png";
     private static final String BOUNDARY_MAX_QR_NAME = "QRCode_5MB.png";
     private static final long MIN_QR_TARGET_BYTES = 10_240L;
     private static final long MAX_QR_TARGET_BYTES = 4_999_000L;
@@ -277,50 +276,43 @@ public void uploadFileForStaticQr(WebDriver driver, WebElement fileInputTrigger,
             throw new IOException("Unsupported image format: " + sourceFile.getAbsolutePath());
         }
 
-        Candidate bestCandidate = null;
-        float[] qualities = new float[] {0.08f, 0.06f, 0.05f, 0.04f, 0.03f, 0.02f, 0.01f, 0.008f, 0.005f};
-        int maxHeight = croppedQrImage.getHeight();
+        BufferedImage workingImage = toMono1Bit(croppedQrImage);
+        croppedQrImage.flush();
+
+        int maxHeight = workingImage.getHeight();
         int minHeight = Math.min(40, maxHeight);
+        int bestHeight = -1;
+        int bestWidth = -1;
 
         for (int height = maxHeight; height >= minHeight; height -= 10) {
             int width = Math.max(2,
-                    ((int) Math.round(height * ((double) croppedQrImage.getWidth() / croppedQrImage.getHeight()))) & ~1);
-            BufferedImage scaledImage = scaleImage(croppedQrImage, width, height);
+                    ((int) Math.round(height * ((double) workingImage.getWidth() / workingImage.getHeight()))) & ~1);
+            BufferedImage scaledImage = scaleImage(workingImage, width, height);
             try {
-                for (float quality : qualities) {
-                    writeJpeg(scaledImage, outputFile, quality);
-                    long currentLength = outputFile.length();
-                    if (currentLength <= MIN_QR_TARGET_BYTES) {
-                        Candidate currentCandidate = new Candidate(width, height, quality, currentLength);
-                        if (bestCandidate == null || currentCandidate.height > bestCandidate.height
-                                || (currentCandidate.height == bestCandidate.height
-                                        && currentCandidate.quality > bestCandidate.quality)) {
-                            bestCandidate = currentCandidate;
-                        }
-                    }
+               ImageIO.write(toMono1Bit(scaledImage), "png", outputFile);
+                long fileSize = outputFile.length();
+                if (fileSize <= MIN_QR_TARGET_BYTES) {
+                    bestHeight = height;
+                    bestWidth = width;
+                    break;
                 }
             } finally {
                 scaledImage.flush();
             }
         }
 
-        if (bestCandidate == null && maxHeight > 40) {
+        if (bestHeight == -1 && maxHeight > 40) {
             for (int height = Math.min(maxHeight, 39); height >= 20; height -= 2) {
                 int width = Math.max(2,
-                        ((int) Math.round(height * ((double) croppedQrImage.getWidth() / croppedQrImage.getHeight()))) & ~1);
-                BufferedImage scaledImage = scaleImage(croppedQrImage, width, height);
+                         ((int) Math.round(height * ((double) workingImage.getWidth() / workingImage.getHeight()))) & ~1);
+                BufferedImage scaledImage = scaleImage(workingImage, width, height);
                 try {
-                    for (float quality : qualities) {
-                        writeJpeg(scaledImage, outputFile, quality);
-                        long currentLength = outputFile.length();
-                        if (currentLength <= MIN_QR_TARGET_BYTES) {
-                            Candidate currentCandidate = new Candidate(width, height, quality, currentLength);
-                            if (bestCandidate == null || currentCandidate.height > bestCandidate.height
-                                    || (currentCandidate.height == bestCandidate.height
-                                            && currentCandidate.quality > bestCandidate.quality)) {
-                                bestCandidate = currentCandidate;
-                            }
-                        }
+                   ImageIO.write(toMono1Bit(scaledImage), "png", outputFile);
+                    long fileSize = outputFile.length();
+                    if (fileSize <= MIN_QR_TARGET_BYTES) {
+                        bestHeight = height;
+                        bestWidth = width;
+                        break;
                     }
                 } finally {
                     scaledImage.flush();
@@ -328,18 +320,37 @@ public void uploadFileForStaticQr(WebDriver driver, WebElement fileInputTrigger,
             }
         }
 
-        if (bestCandidate == null) {
-            throw new IOException("Unable to generate runtime 10KB QR file from source image.");
+        if (bestHeight == -1) {
+            throw new IOException("Unable to generate runtime 10KB QR PNG from source image.");
         }
 
-        BufferedImage finalImage = scaleImage(croppedQrImage, bestCandidate.width, bestCandidate.height);
+String selectionMsg = String.format(
+                "🖼️ Selected QR candidate — height: %dpx, width: %dpx, size: %d bytes (1-bit PNG)",
+                bestHeight, bestWidth, outputFile.length());
+        logger.info(selectionMsg);
+        utils.ExtentReportManager.logStep(selectionMsg);
+        BufferedImage finalImage = scaleImage(workingImage, bestWidth, bestHeight);       
         try {
-            writeJpeg(finalImage, outputFile, bestCandidate.quality);
+           ImageIO.write(toMono1Bit(finalImage), "png", outputFile);
             padFileToExactSize(outputFile, MIN_QR_TARGET_BYTES);
         } finally {
             finalImage.flush();
-            croppedQrImage.flush();
+            workingImage.flush();
         }
+    }
+
+private BufferedImage toMono1Bit(BufferedImage source) {
+        int w = source.getWidth(), h = source.getHeight();
+        BufferedImage mono = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int rgb = source.getRGB(x, y);
+                int brightness = ((rgb >> 16) & 0xFF) + ((rgb >> 8) & 0xFF) + (rgb & 0xFF);
+                // index 0 = black, index 1 = white in default BYTE_BINARY colour model
+                mono.getRaster().setSample(x, y, 0, brightness < 384 ? 0 : 1);
+            }
+        }
+        return mono;
     }
 
     private void writeSquareQrPng(File sourceFile, File outputFile) throws IOException {
@@ -507,30 +518,7 @@ public void uploadFileForStaticQr(WebDriver driver, WebElement fileInputTrigger,
         return scaledImage;
     }
 
-    private void writeJpeg(BufferedImage image, File outputFile, float quality) throws IOException {
-        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
-        if (!writers.hasNext()) {
-            throw new IOException("No JPEG writer available for runtime QR generation.");
-        }
-
-        if (outputFile.exists() && !outputFile.delete()) {
-            throw new IOException("Unable to replace runtime JPEG file: " + outputFile.getAbsolutePath());
-        }
-
-        ImageWriter writer = writers.next();
-        try (FileImageOutputStream outputStream = new FileImageOutputStream(outputFile)) {
-            writer.setOutput(outputStream);
-            ImageWriteParam writeParam = writer.getDefaultWriteParam();
-            if (writeParam.canWriteCompressed()) {
-                writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                writeParam.setCompressionQuality(quality);
-            }
-            writer.write(null, new IIOImage(image, null, null), writeParam);
-        } finally {
-            writer.dispose();
-        }
-    }
-
+    
     private void padFileToExactSize(File file, long targetSize) throws IOException {
         long currentSize = file.length();
         if (currentSize > targetSize) {
@@ -551,19 +539,6 @@ public void uploadFileForStaticQr(WebDriver driver, WebElement fileInputTrigger,
         }
     }
 
-    private static class Candidate {
-        private final int width;
-        private final int height;
-        private final float quality;
-        private final long size;
-
-        private Candidate(int width, int height, float quality, long size) {
-            this.width = width;
-            this.height = height;
-            this.quality = quality;
-            this.size = size;
-        }
-    }
 
     public void waitForElementVisibleWithPolling(WebDriver driver, WebElement element) {
         FluentWait<WebDriver> wait = new FluentWait<>(driver)

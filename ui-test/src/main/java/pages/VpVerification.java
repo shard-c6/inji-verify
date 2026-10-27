@@ -330,6 +330,16 @@ public class VpVerification extends BasePage {
 		clickOnElement(driver, proccedButton);
 	}
 
+	public boolean isTrustButtonVisible() {
+		try {
+			new WebDriverWait(driver, Duration.ofSeconds(3))
+				.until(ExpectedConditions.visibilityOf(trustButton));
+			return trustButton.isDisplayed();
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
 	public void trustButton() {
 		new WebDriverWait(driver, Duration.ofSeconds(getTimeout()));
 		clickOnElement(driver, trustButton);

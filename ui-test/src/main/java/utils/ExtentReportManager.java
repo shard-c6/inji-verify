@@ -2,12 +2,16 @@ package utils;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
+import com.aventstack.extentreports.MediaEntityBuilder;
 import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
 import com.aventstack.extentreports.reporter.configuration.Theme;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.Base64;
 import java.util.Date;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -90,6 +94,18 @@ public class ExtentReportManager {
         }
     }
 
+    public static void logImage(String message, String imagePath) {
+        ExtentTest test = testHolder.get();
+        if (test == null) return;
+        try {
+            byte[] bytes = Files.readAllBytes(Path.of(imagePath));
+            String base64 = Base64.getEncoder().encodeToString(bytes);
+            test.info(message, MediaEntityBuilder.createScreenCaptureFromBase64String(base64).build());
+        } catch (Exception e) {
+            test.info(message + " [image attach failed: " + e.getMessage() + "]");
+        }
+    }
+    
     public static void flushReport() {
         if (extent != null) {
             extent.flush();

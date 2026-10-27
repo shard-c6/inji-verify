@@ -49,10 +49,13 @@ public class UiConstants {
 	public static final String ERROR_MESSAGE_SCAN_TIMEOUT = "The scan session has expired due to inactivity. Please initiate a new scan.";
 	public static final String ERROR_MESSAGE_EXPIRED_QR = "The given credential is valid but expired!";
 	public static final String ERROR_UNSUPPORTED_FORMAT = "Unsupported file format. Allowed file formats are: png, jpeg, jpg, pdf.";
-	public static final String ERROR_MULTI_FORMAT = "No QRCode found";
-	public static final String HALF_QRCODE_FAILURE_MESSAGE = "Session expired. Please Scan again.";
+	public static final String ERROR_SMALL_OR_BLUR_QR_CODE = "QR size too small/low quality, please retry with a clear QR";
+	public static final String ERROR_MULTI_FORMAT = "No QR code found";
+	public static final String HALF_QRCODE_FAILURE_MESSAGE = "Couldn't read the QR code. Make sure the entire QR code is inside the frame and try again.";
+	public static final String ERROR_MULTIPLE_QR_CODES = "Multiple QR codes detected, please retry with an image containing a single QR code.";
+	public static final String ERROR_SESSION_EXPIRED = "Session expired. Please Scan again.";
 
-	public static final String SCAN_QR_CODE_LABEL_FONT_AFTER_STEP = "ml-[10px] text-lgNormalTextSize font-bold text-stepperLabel";
+	public static final String SCAN_QR_CODE_LABEL_FONT_AFTER_STEP = "ml-[10px] text-lgNormalTextSize font-bold text-black";
 	public static final String CLASS = "class";
 	public static final String NO_INTERNET_TITLE = "No Internet Connection!";
 	public static final String NO_INTERNET_DESCRIPTION = "Oops! We cant seem to connect. Check your internet connection and try again.";
@@ -60,7 +63,7 @@ public class UiConstants {
 	public static final String CAMERA_ACCESS_DENIED_DESCRIPTION = "We need your camera to scan the code. Go to your browser settings and allow camera access for this website.";
 	public static final String CAMERA_ACCESS_DENIED_OKAY_BUTTON = "Okay";
 
-	public static final String NO_MATCHING_CREDENTIALS_ERROR = "No matching credentials found";
+	public static final String NO_MATCHING_CREDENTIALS_ERROR = "Required Card(s) Not Found!";
 	public static final String PARTIAL_SHARING_MESSAGE = "Not Shared";
 	public static final String CONGRATULATIONS_MESSAGE = "Congratulations, the given credential is valid!";
 

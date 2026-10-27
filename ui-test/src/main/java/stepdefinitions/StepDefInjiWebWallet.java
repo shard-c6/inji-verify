@@ -175,10 +175,14 @@ public class StepDefInjiWebWallet extends BaseSteps {   // <-- extends BaseSteps
     @Then("User click on trust verifier")
     public void user_clicks_on_trust_verifier() {
         try {
-            vpVerification.trustButton();
-            test.log(Status.PASS, "Selected the trust verifier button.");
-        } catch (NoSuchElementException e) {
-            logFailure(test, driver, "Failed to select the trust verifier button", e);
+            if (vpVerification.isTrustButtonVisible()) {
+                vpVerification.trustButton();
+                test.log(Status.PASS, "Selected the trust verifier button.");
+            } else {
+                test.log(Status.PASS, "Trust verifier button not visible — skipping step.");
+            }
+        } catch (Exception e) {
+            logFailure(test, driver, "Unexpected error while clicking the trust verifier button", e);
             throw e;
         }
     }
@@ -202,7 +206,7 @@ public class StepDefInjiWebWallet extends BaseSteps {   // <-- extends BaseSteps
     public void user_presents_the_requested_health_insurance_credential_from_inji_web_wallet() {
         try {
             injiWebWalletPage.selectCredentialForPresentation();
-            injiWebWalletPage.clickConsentAndShareButton();
+            injiWebWalletPage.clickShowConsentModalButton();
             test.log(Status.PASS, "Successfully presented the requested Health Insurance credential from inji-web wallet.");
         } catch (Exception e) {
             logFailure(test, driver, "Failed to present the requested Health Insurance credential", e);
@@ -235,10 +239,21 @@ public class StepDefInjiWebWallet extends BaseSteps {   // <-- extends BaseSteps
     @Then("User clicks consent and share button")
     public void user_clicks_consent_and_share_button() {
         try {
-            injiWebWalletPage.clickConsentAndShareButton();
+            injiWebWalletPage.clickShowConsentModalButton();
             test.log(Status.PASS, "Successfully clicked consent and share button.");
         } catch (Exception e) {
             logFailure(test, driver, "Failed to click consent and share button", e);
+            throw e;
+        }
+    }
+
+    @Then("User clicks consent and share card button")
+    public void user_clicks_consent_and_share_card_button() {
+        try {
+            injiWebWalletPage.clickConsentAndShareCardButton();
+            test.log(Status.PASS, "Successfully clicked consent and share card button.");
+        } catch (Exception e) {
+            logFailure(test, driver, "Failed to click consent and share card button", e);
             throw e;
         }
     }

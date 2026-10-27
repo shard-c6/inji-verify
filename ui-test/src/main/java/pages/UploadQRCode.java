@@ -81,7 +81,7 @@ public class UploadQRCode extends BasePage {
 	@FindBy(xpath = "//*[@id='vc-result-display-message']")
 	WebElement ErrorMessageForExpiredQRCode;
 
-	@FindBy(xpath = "//span[@id='please-try-again-button']")
+	@FindBy(id = "please-try-again-button")
 	WebElement PleaseTryAgain;
 
 	@FindBy(xpath = "//input[@type='file']")
@@ -166,6 +166,12 @@ public class UploadQRCode extends BasePage {
 		uploadWithSingleRecovery(() -> clickOnUploadQRCodeJpeg());
 	}
 
+	public void uploadJpegAndWaitForOfflineResult() {
+		clickOnUploadQRCodeJpeg();
+		new WebDriverWait(driver, Duration.ofSeconds((long) getTimeout() * 4L))
+				.until(webDriver -> hasAnyOfflineVerificationResultVisible());
+	}
+
 	public void uploadAnotherJpegAndWaitForVerificationResult() {
 		uploadWithSingleRecovery(() -> clickOnAnotherUploadQRCodeJpeg());
 	}
@@ -198,7 +204,7 @@ public class UploadQRCode extends BasePage {
 	}
 
 	public void clickOnUploadBoundaryMinSizeQRCode() {
-		uploadFileForStaticQr(driver, UploadQRCodeButton, "QRCode_10KB.jpg");
+		uploadFileForStaticQr(driver, UploadQRCodeButton, "QRCode_10KB.png");
 
 	}
 
@@ -480,6 +486,16 @@ public class UploadQRCode extends BasePage {
 				|| isDisplayedWithoutWaiting(ErrorTextLargeSizeQRCode)
 				|| isDisplayedWithoutWaiting(UploadQRCodeStep2LabelAfter)
 				|| isDisplayedWithoutWaiting(UploadQRCodeStep3LabelAfter);
+	}
+
+	private boolean hasAnyOfflineVerificationResultVisible() {
+		return isDisplayedWithoutWaiting(TickIconVisible)
+				|| isDisplayedWithoutWaiting(VerifyAnotherQRcodeButton)
+				|| isDisplayedWithoutWaiting(ErrorTextExpiredQRCode)
+				|| isDisplayedWithoutWaiting(ErrorTextLargeSizeQRCode)
+				|| isDisplayedWithoutWaiting(UploadQRCodeStep2LabelAfter)
+				|| isDisplayedWithoutWaiting(UploadQRCodeStep3LabelAfter)
+				|| isDisplayedWithoutWaiting(PleaseTryAgain);
 	}
 
 	private boolean isDisplayedWithoutWaiting(WebElement element) {

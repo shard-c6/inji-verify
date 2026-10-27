@@ -31,8 +31,11 @@ public class InjiWebWalletPage extends BasePage {
 	@FindBy(xpath = "(//input[@type='checkbox' and @aria-label='Select Health Insurance credential'])[2]")
 	WebElement selectSecondVCButton;
 
-	@FindBy(xpath = "(//button[@data-testid='btn-consent-share'])[2]")
-	WebElement consentAndShareButton;
+	@FindBy(xpath = "(//button[@data-testid='show-consent-modal-button'])")
+	WebElement showConsentModalButton;
+
+	@FindBy(xpath = "(//button[@data-testid='CredentialShareCard-ShareButton'])")
+	WebElement consentAndShareCardButton;
 
 	@FindBy(xpath = "//button[@data-testid='google-login-button']")
 	WebElement googleButton;
@@ -201,8 +204,12 @@ public void enterConfirmPasscode(String string) {
 		clickOnElement(driver, selectSecondVCButton);
 	}
 
-	public void clickConsentAndShareButton() {
- 		clickOnElement(driver, consentAndShareButton);
+	public void clickShowConsentModalButton() {
+ 		clickOnElement(driver, showConsentModalButton);
+	}
+
+	public void clickConsentAndShareCardButton() {
+		clickOnElement(driver, consentAndShareCardButton);
 	}
 
 	public void switchToNewestWindowIfNeeded() {
